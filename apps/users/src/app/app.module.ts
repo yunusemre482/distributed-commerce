@@ -6,6 +6,7 @@ import { PostgresDatabaseModule } from '@libs/common/src';
 import { UserRepository } from './repositories/user.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
+import { UserAddress } from './entities/address.entity';
 import { InternationalizationModule } from '@libs/common/src/internationalization/internationalization.module';
 
 @Module({
@@ -15,7 +16,7 @@ import { InternationalizationModule } from '@libs/common/src/internationalizatio
       isGlobal: true,
     }),
     PostgresDatabaseModule,
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserAddress]),
     InternationalizationModule
   ],
   controllers: [AppController],
