@@ -33,6 +33,11 @@ export class RabbitMqModule {
                 options: {
                   urls: urls,
                   queue: queueName,
+                  queueOptions: {
+                    arguments: {
+                      'x-queue-type': 'quorum',
+                    },
+                  },
                 },
               }
 

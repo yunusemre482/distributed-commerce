@@ -5,6 +5,27 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/products",
+        "main": "apps/products/src/main.ts",
+        "tsConfig": "apps/products/tsconfig.app.json",
+        "assets": [
+          "apps/products/src/assets",
+          {
+            "input": "libs/common/src/internationalization/",
+            "glob": "**/*.json",
+            "output": "./src/i18n/"
+          }
+        ],
+        "generatePackageJson": true,
+        "target": "node",
+        "compiler": "tsc",
+        "isolatedConfig": false
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",

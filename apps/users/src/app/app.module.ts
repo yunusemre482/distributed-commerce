@@ -1,29 +1,24 @@
 import { Module } from '@nestjs/common';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from '@libs/common/src/database/database.module';
+import { PostgresDatabaseModule } from '@libs/common/src';
 import { UserRepository } from './repositories/user.repository';
-import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from '@libs/models/src';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
 import { InternationalizationModule } from '@libs/common/src/internationalization/internationalization.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ['.env', '.env.development', '.env.development.example','.env.production','.env.production.example'],
+      envFilePath: ['.env', '.env.development', '.env.development.example', '.env.production', '.env.production.example'],
+      isGlobal: true,
     }),
-    DatabaseModule,
-    MongooseModule.forFeature([
-      {
-        name: User.name,
-        schema: UserSchema
-      }
-    ]),
+    PostgresDatabaseModule,
+    TypeOrmModule.forFeature([User]),
     InternationalizationModule
   ],
   controllers: [AppController],
   providers: [AppService, UserRepository],
 })
-export class AppModule { }
+export class AppModule {}

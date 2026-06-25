@@ -13,6 +13,8 @@ import { Connection } from 'mongoose';
         return {
           uri: configService.get<string>('MONGODB_URI'),
           dbName: configService.get<string>('MONGODB_DB_NAME'),
+          maxPoolSize: 100,
+          readPreference: 'secondaryPreferred',
           connectionFactory: (connection: Connection) => {
             if (connection.readyState === 1) {
               Logger.log('DB connected');
