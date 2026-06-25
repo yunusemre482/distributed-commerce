@@ -6,6 +6,7 @@ import { DatabaseModule } from '@libs/common/src';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema } from '@libs/models/src';
 import { ProductRepository } from './repositories/product.repository';
+import { ElasticsearchService } from './services/elasticsearch.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { ProductRepository } from './repositories/product.repository';
     ]),
   ],
   controllers: [AppController],
-  providers: [AppService, ProductRepository],
+  providers: [AppService, ProductRepository, ElasticsearchService],
 })
 export class AppModule {}

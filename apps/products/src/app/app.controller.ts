@@ -26,4 +26,10 @@ export class AppController {
     this.logger.log(`Received getProductById request for id ${id}`);
     return this.appService.getProductById(id);
   }
+
+  @MessagePattern('searchProducts')
+  async searchProducts(@Payload() data: { query: string }) {
+    this.logger.log(`Received searchProducts request with query: "${data.query}"`);
+    return this.appService.searchProducts(data.query);
+  }
 }

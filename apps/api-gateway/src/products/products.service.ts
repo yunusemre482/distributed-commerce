@@ -20,4 +20,8 @@ export class ProductsService {
   async getProductById(id: string) {
     return this.productClient.send('getProductById', id);
   }
+
+  async searchProducts(query: string) {
+    return this.productClient.send('searchProducts', { query });
+  }
 }
