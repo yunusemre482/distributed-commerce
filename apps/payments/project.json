@@ -5,7 +5,27 @@
   "projectType": "application",
   "tags": [],
   "targets": {
-    
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/payments",
+        "main": "apps/payments/src/main.ts",
+        "tsConfig": "apps/payments/tsconfig.app.json",
+        "assets": [
+          "apps/payments/src/assets",
+          {
+            "input": "libs/common/src/internationalization/",
+            "glob": "**/*.json",
+            "output": "./src/i18n/"
+          }
+        ],
+        "generatePackageJson": true,
+        "target": "node",
+        "compiler": "tsc",
+        "isolatedConfig": false
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",

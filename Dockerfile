@@ -2,28 +2,14 @@ FROM node:20.11-alpine
 WORKDIR /app
 
 ARG APP
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-RUN corepack enable
+ENV PORT=3000
 
 COPY ./dist/apps/${APP} .
 
-RUN pnpm install --production
-RUN pnpm install @nestjs/platform-express
-
-RUN pnpm install -g pm2
-
-RUN pm2 install pm2-logrotate
-RUN pm2 install pm2-server-monit
-
-RUN pm2 set pm2-logrotate:retain 7
-RUN pm2 set pm2-logrotate:compress true
-RUN pm2 set pm2-logrotate:dateFormat YYYY-MM-DD_HH-mm-ss
-
-ENV PORT=3000
+# Since we are using npm, install dependencies using npm
+RUN npm install --omit=dev --legacy-peer-deps
+RUN npm install @nestjs/platform-express pg --legacy-peer-deps
 
 EXPOSE ${PORT}
 
-# CMD ["node", "main.js"]
-CMD ["pm2-runtime", "start", "main.js", "--name", "api-gateway", "--watch"]
+CMD ["node", "main.js"]

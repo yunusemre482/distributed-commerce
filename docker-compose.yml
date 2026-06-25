@@ -1,86 +1,12 @@
+version: '3.8'
+
 services:
-  api-gateway:
-    container_name: api-gateway
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-      tags:
-        - "api-gateway-image:latest"
-      args:
-        - APP=api-gateway
-    env_file:
-      - "apps/api-gateway/.env.docker"
-    volumes:
-      - .:/usr/src/app
-    ports:
-      - '3000:3000'
-    depends_on:
-      - rabbitmq
-      - redis
-      - mongodb-primary
-      - mongodb-secondary
-      - mongodb-arbiter
-      - minio
-    networks:
-      - mongodb_nodejs
-      - rabbitmq_nodejs
-  user-service:
-    container_name: user-service
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-      tags:
-        - "user-service-image:latest"
-      args:
-        - APP=users
-    env_file:
-      - "apps/users/.env.docker"
-    volumes:
-      - .:/usr/src/app
-    ports:
-      - '3001:3001'
-    depends_on:
-      - rabbitmq
-      - redis
-      - mongodb-primary
-      - mongodb-secondary
-      - mongodb-arbiter
-      - minio
-    networks:
-      - mongodb_nodejs
-      - rabbitmq_nodejs
-    links:
-      - rabbitmq
-      - redis
-      - mongodb-primary
-      - mongodb-secondary
-      - mongodb-arbiter
-      - minio
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
-  minio:
-    image: minio/minio:latest
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - miniostorage:/data
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server --console-address ":9001" /data
-  redis:
-    image: redis
-    restart: always
-    ports:
-      - 6379:6379
-    volumes:
-      - redis_data_container:/data
-    command: redis-server
+  # --- INFRASTRUCTURE SERVICES ---
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
-    hostname: 'rabbitmq'
+    hostname: rabbitmq
+    restart: always
     ports:
       - "15672:15672"
       - "5672:5672"
@@ -90,7 +16,23 @@ services:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: rabbitmq
     networks:
-      - rabbitmq_nodejs
+      - app_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: postgres_db
+    volumes:
+      - postgres_data_container:/var/lib/postgresql/data
+    networks:
+      - app_network
+
   mongodb-primary:
     container_name: mongodb-primary
     image: mongo
@@ -106,9 +48,12 @@ services:
       MONGODB_REPLICA_SET_MODE: primary
       MONGODB_REPLICA_SET_KEY: replicasetkey123
     networks:
-      - mongodb_nodejs
+      - app_network
+
   mongodb-secondary:
+    container_name: mongodb-secondary
     image: mongo
+    restart: always
     depends_on:
       - mongodb-primary
     environment:
@@ -118,9 +63,12 @@ services:
       MONGODB_INITIAL_PRIMARY_HOST: mongodb-primary
       MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD: example
     networks:
-      - mongodb_nodejs
+      - app_network
+
   mongodb-arbiter:
+    container_name: mongodb-arbiter
     image: mongo
+    restart: always
     depends_on:
       - mongodb-primary
     environment:
@@ -130,9 +78,11 @@ services:
       MONGODB_INITIAL_PRIMARY_HOST: mongodb-primary
       MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD: example
     networks:
-      - mongodb_nodejs
+      - app_network
+
   mongo-express:
     image: mongo-express
+    container_name: mongo-express
     restart: always
     ports:
       - 8081:8081
@@ -140,18 +90,154 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: password
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongodb-primary:27017/
+    depends_on:
+      - mongodb-primary
     networks:
-      - mongodb_nodejs
+      - app_network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data_container:/data
+    networks:
+      - app_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniostorage:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server --console-address ":9001" /data
+    networks:
+      - app_network
+
+  # --- MICROSERVICES ---
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP=api-gateway
+    env_file:
+      - "apps/api-gateway/.env.docker"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+      - mongodb-primary
+    networks:
+      - app_network
+
+  auth-service:
+    container_name: auth-service
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP=authentication
+    env_file:
+      - "apps/authentication/.env.docker"
+    ports:
+      - "3001:3001"
+    depends_on:
+      - rabbitmq
+    networks:
+      - app_network
+
+  user-service:
+    container_name: user-service
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP=users
+    env_file:
+      - "apps/users/.env.docker"
+    ports:
+      - "3002:3002"
+    depends_on:
+      - rabbitmq
+      - postgres
+    networks:
+      - app_network
+
+  product-service:
+    container_name: product-service
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP=products
+    env_file:
+      - "apps/products/.env.docker"
+    ports:
+      - "3003:3003"
+    depends_on:
+      - rabbitmq
+      - mongodb-primary
+    networks:
+      - app_network
+
+  order-service:
+    container_name: order-service
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP=orders
+    env_file:
+      - "apps/orders/.env.docker"
+    ports:
+      - "3004:3004"
+    depends_on:
+      - rabbitmq
+      - postgres
+    networks:
+      - app_network
+
+  payment-service:
+    container_name: payment-service
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP=payments
+    env_file:
+      - "apps/payments/.env.docker"
+    ports:
+      - "3005:3005"
+    depends_on:
+      - rabbitmq
+      - postgres
+    networks:
+      - app_network
 
 volumes:
   redis_data_container:
     driver: local
   mongodb_data_container:
+    driver: local
   miniostorage:
+    driver: local
+  postgres_data_container:
     driver: local
 
 networks:
-  mongodb_nodejs:
-  rabbitmq_nodejs:
+  app_network:
+    driver: bridge

@@ -16,6 +16,8 @@ import { WinstonLoggerService } from '../middlewares/winston-logger.handler';
 import { InternationalizationModule } from '@libs/common/src/internationalization/internationalization.module';
 import { I18nValidationException, I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
 import { CustomI18nValidationExceptionFilter } from '../middlewares/custom-i18n.exception.filter';
+import { RedisModule } from '@libs/common/src';
+import { IdempotencyInterceptor } from '../middlewares/idempotency.interceptor';
 
 
 @Module({
@@ -25,6 +27,7 @@ import { CustomI18nValidationExceptionFilter } from '../middlewares/custom-i18n.
       isGlobal: true,
     }),
     InternationalizationModule,
+    RedisModule,
     AuthModule,
     UsersModule,
     PaymentModule,
@@ -35,6 +38,10 @@ import { CustomI18nValidationExceptionFilter } from '../middlewares/custom-i18n.
   providers: [
     AppService,
     WinstonLoggerService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: GlobalResponseInterceptor,

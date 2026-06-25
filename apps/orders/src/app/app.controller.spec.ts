@@ -1,22 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
-
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 describe('AppController', () => {
-  let app: TestingModule;
+  let controller: AppController;
+  let commandBus: CommandBus;
+  let queryBus: QueryBus;
 
-  beforeAll(async () => {
-    app = await Test.createTestingModule({
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: CommandBus,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: QueryBus,
+          useValue: { execute: jest.fn() },
+        },
+      ],
     }).compile();
+
+    controller = module.get<AppController>(AppController);
+    commandBus = module.get<CommandBus>(CommandBus);
+    queryBus = module.get<QueryBus>(QueryBus);
   });
 
-  describe('getData', () => {
-    it('should return "Hello API"', () => {
-      const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({ message: 'Hello API' });
-    });
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
   });
 });
