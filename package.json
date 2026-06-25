@@ -1,5 +1,5 @@
 {
-  "name": "@nest-microservices/source",
+  "name": "nest-microservices-ecommerce",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {

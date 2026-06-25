@@ -49,22 +49,26 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
 
     const totalAmount = product.price * dto.quantity;
 
-    const order = await this.orderRepository.createOrder({
-      userId: dto.userId,
-      productId: dto.productId,
-      quantity: dto.quantity,
-      totalAmount: totalAmount,
-      status: 'PENDING_PAYMENT',
-    });
+    const order = await this.orderRepository.createOrderWithOutbox(
+      {
+        userId: dto.userId,
+        productId: dto.productId,
+        productName: product.name,
+        productPrice: product.price,
+        quantity: dto.quantity,
+        totalAmount: totalAmount,
+        status: 'PENDING_PAYMENT',
+      },
+      {
+        eventType: 'order.created',
+        payload: JSON.stringify({
+          totalAmount: totalAmount,
+          userId: dto.userId,
+        }),
+      }
+    );
 
-    this.logger.log(`Order ${order.id} saved. Publishing event order.created...`);
-
-    this.paymentClient.emit('order.created', {
-      orderId: order.id,
-      totalAmount: order.totalAmount,
-      userId: order.userId,
-    });
-
+    this.logger.log(`Order ${order.id} and outbox event saved atomically.`);
     return order;
   }
 }

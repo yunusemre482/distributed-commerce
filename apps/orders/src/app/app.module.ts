@@ -5,8 +5,10 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { PostgresDatabaseModule, RabbitMqModule } from '@libs/common/src';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
+import { Outbox } from './entities/outbox.entity';
 import { PAYMENTS_SERVICE, PAYMENTS_SERVICE_QUEUE, PRODUCTS_SERVICE, PRODUCTS_SERVICE_QUEUE } from '@libs/constants/src';
 import { OrderRepository } from './repositories/order.repository';
+import { OutboxProcessor } from './utils/outbox.processor';
 
 // CQRS Handlers
 import { CreateOrderCommandHandler } from './commands/create-order.handler';
@@ -24,7 +26,7 @@ const QueryHandlers = [GetOrdersQueryHandler];
     }),
     PostgresDatabaseModule,
     CqrsModule,
-    TypeOrmModule.forFeature([Order]),
+    TypeOrmModule.forFeature([Order, Outbox]),
     RabbitMqModule.register({
       name: PRODUCTS_SERVICE,
       queue: PRODUCTS_SERVICE_QUEUE,
@@ -37,6 +39,7 @@ const QueryHandlers = [GetOrdersQueryHandler];
   controllers: [AppController],
   providers: [
     OrderRepository,
+    OutboxProcessor,
     ...CommandHandlers,
     ...QueryHandlers,
   ],
