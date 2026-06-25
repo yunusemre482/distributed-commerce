@@ -18,6 +18,7 @@ import { I18nValidationException, I18nValidationExceptionFilter, I18nValidationP
 import { CustomI18nValidationExceptionFilter } from '../middlewares/custom-i18n.exception.filter';
 import { RedisModule } from '@libs/common/src';
 import { IdempotencyInterceptor } from '../middlewares/idempotency.interceptor';
+import { TraceMiddleware } from '../middlewares/trace.middleware';
 
 
 @Module({
@@ -81,7 +82,6 @@ import { IdempotencyInterceptor } from '../middlewares/idempotency.interceptor';
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    //consumer.apply(ProfilerMiddleware).forRoutes('*');
-    //consumer.apply(LoggerMiddleware).forRoutes('*');
+    consumer.apply(TraceMiddleware).forRoutes('*');
   }
 }
