@@ -139,6 +139,11 @@ Scaling this system to support 1 Million Daily Active Users requires addressing 
     *   **Read-Write Splitting & Replica Lag**: Route write transactions (`INSERT`, `UPDATE`) to a primary PostgreSQL instance. Replicate asynchronously to multiple read-only replicas, distributing catalog/profile queries across them. To handle replication lag (where a user updates their profile and immediately loads the page, seeing old data), implement a "write-through" cache or route read requests for the same user to the primary database for a short window (e.g. 5 seconds) after any write.
     *   **MongoDB Replica Sets**: Configure Mongoose to connect to a MongoDB replica set using `readPreference=secondaryPreferred`. This ensures write-heavy catalog updates happen on the primary node, while browsing queries are distributed across secondary replica nodes.
 
+#### ⚡ Distributed Caching (Cache-Aside Pattern with Redis)
+*   **The Problem**: At 1M+ DAU, Products catalog reads will reach thousands of requests per second. Querying MongoDB for every individual product details load is extremely expensive and introduces high read latency.
+*   **The Mitigation**:
+    *   **Cache-Aside with Redis**: We wrap `getProductById` in the Products catalog service with a Redis Cache-Aside layer. When a detail request is received, the service checks Redis first. On a cache hit, the JSON response is returned in <2ms. On a cache miss, the data is fetched from MongoDB and cached in Redis with a 10-minute TTL (600s), shielding MongoDB from 90% of redundant reads. Connection failures to Redis are caught gracefully, allowing immediate failover directly to MongoDB without service disruption.
+
 #### 🔄 Saga Consistency Anomalies, Row Locks & Event Race Conditions
 *   **The Problem**: Saga choreography runs asynchronously without global database locks. Highly concurrent events can result in race conditions:
     *   **Out-of-Order Execution**: A user requests a cancellation immediately after checkout. The `order.cancelled` event and `payment.succeeded` event are processed concurrently. If `payment.succeeded` executes last, it could overwrite the `CANCELLED` status with `PAID`, charging the user but leaving the order in an invalid state.
