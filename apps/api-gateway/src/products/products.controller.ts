@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, BadRequestException } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDTO } from '@libs/shared/src';
 
@@ -17,6 +17,14 @@ export class ProductsController {
   @Get()
   async getAllProducts() {
     return this.productsService.getAllProducts();
+  }
+
+  @Get('search')
+  async searchProducts(@Query('q') query: string) {
+    if (!query) {
+      throw new BadRequestException('Query parameter "q" is required');
+    }
+    return this.productsService.searchProducts(query);
   }
 
   @Get(':id')

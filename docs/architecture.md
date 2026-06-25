@@ -63,6 +63,8 @@ To enforce complete decoupling, this architecture uses the **Database-per-Servic
     *   **Users**: Enforces unique constraints, structured relations, and index efficiency on user profiles.
 *   **Document Model (MongoDB + Mongoose)**: Emitted for `Products`.
     *   **Products Catalog**: Product structures are polymorphic (varying attributes by category). Storing them as JSON documents in MongoDB bypasses the cost of complex relational tables and joins, resulting in ultra-fast catalog reading.
+*   **Search Index Model (Elasticsearch)**: Integrated with the `Products` Catalog service.
+    *   **Fuzzy & Text Search**: Performing complex text search, typo tolerance, and keyword boosting directly in MongoDB causes high CPU load. By indexing products asynchronously in Elasticsearch on creation, we offload all search operations (`GET /api/v1/products/search?q=query`) to a dedicated inverted-index search engine, ensuring sub-10ms query latencies at scale.
 
 ---
 
